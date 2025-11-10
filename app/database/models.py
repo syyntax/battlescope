@@ -119,8 +119,10 @@ class Database:
             if query.strip().upper().startswith('SELECT'):
                 results = self.cursor.fetchall()
                 columns = [description[0] for description in self.cursor.description]
+                # Convert Row objects to lists for JSON serialization
+                rows = [list(row) for row in results]
                 self.close()
-                return {'columns': columns, 'rows': results}
+                return {'columns': columns, 'rows': rows}
             else:
                 self.conn.commit()
                 self.close()
