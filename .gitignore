@@ -52,3 +52,7 @@ Thumbs.db
 # Environment
 .env
 .env.local
+
+# Markdowns
+PROJECT_REQUIREMENTS.md
+QUERY_DEFS.md
