@@ -1,0 +1,1 @@
+"""BattleScope application package."""

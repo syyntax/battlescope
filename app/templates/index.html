@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BattleScope</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@300..700&family=Genos:ital,wght@0,100..900;1,100..900&family=Google+Sans+Code:ital,wght@0,300..800;1,300..800&family=Iceberg&family=JetBrains+Mono:ital,wght@0,100..800;1,100..800&family=PT+Sans:ital,wght@0,400;0,700;1,400;1,700&family=Sanchez:ital@0;1&display=swap" rel="stylesheet">
+</head>
+<body>
+    <nav class="navbar">
+        <div class="nav-content">
+            <h1 class="logo">BattleScope</h1>
+            <button id="theme-toggle" class="theme-toggle" aria-label="Toggle theme">
+                <span class="theme-icon">◐</span>
+            </button>
+        </div>
+    </nav>
+
+    <div class="container">
+        <!-- Left Pane: Pre-built Queries -->
+        <aside class="left-pane">
+            <h2>Quick Queries</h2>
+            <div class="query-list">
+                <button class="query-btn" data-query="SELECT ip_address, hostname, status FROM hosts">
+                    All Hosts
+                </button>
+                <button class="query-btn" data-query="SELECT h.ip_address, p.port_number, p.protocol, p.service_name FROM hosts h JOIN ports p ON h.id = p.host_id WHERE p.state = 'open' ORDER BY h.ip_address">
+                    Open Ports
+                </button>
+                <button class="query-btn" data-query="SELECT h.ip_address, os.os_name, os.accuracy FROM hosts h JOIN operating_systems os ON h.id = os.host_id ORDER BY os.accuracy DESC">
+                    Operating Systems
+                </button>
+                <button class="query-btn" data-query="SELECT h.ip_address, v.plugin_name, v.risk_factor, v.severity FROM hosts h JOIN vulnerabilities v ON h.id = v.host_id WHERE v.risk_factor IN ('Critical', 'High') ORDER BY v.risk_factor">
+                    Critical & High Vulns
+                </button>
+                <button class="query-btn" data-query="SELECT risk_factor, COUNT(*) as count FROM vulnerabilities GROUP BY risk_factor ORDER BY CASE risk_factor WHEN 'Critical' THEN 1 WHEN 'High' THEN 2 WHEN 'Medium' THEN 3 WHEN 'Low' THEN 4 WHEN 'Info' THEN 5 END">
+                    Vulnerability Summary
+                </button>
+                <button class="query-btn" data-query="SELECT port_number, protocol, service_name, COUNT(*) as count FROM ports WHERE state = 'open' GROUP BY port_number, protocol ORDER BY count DESC LIMIT 20">
+                    Top 20 Ports
+                </button>
+                <button class="query-btn" data-query="SELECT h.ip_address, COUNT(p.id) as open_ports FROM hosts h LEFT JOIN ports p ON h.id = p.host_id AND p.state = 'open' GROUP BY h.id ORDER BY open_ports DESC">
+                    Hosts by Port Count
+                </button>
+                <button class="query-btn" data-query="SELECT service_name, COUNT(*) as count FROM ports WHERE state = 'open' AND service_name != '' GROUP BY service_name ORDER BY count DESC">
+                    Services Running
+                </button>
+            </div>
+        </aside>
+
+        <!-- Middle Pane: Upload & Query -->
+        <main class="middle-pane">
+            <div class="upload-section">
+                <h2>Upload Scan File</h2>
+                <div class="upload-area" id="upload-area">
+                    <input type="file" id="file-input" accept=".nessus,.xml" hidden>
+                    <label for="file-input" class="upload-label">
+                        <span class="upload-icon">📁</span>
+                        <span class="upload-text">Click to upload or drag & drop</span>
+                        <span class="upload-subtext">Nessus (.nessus) or Nmap (.xml) files</span>
+                    </label>
+                </div>
+                <div id="upload-status" class="upload-status"></div>
+            </div>
+
+            <div class="query-section">
+                <h2>SQL Query</h2>
+                <div class="query-input-wrapper">
+                    <textarea id="query-input" class="query-input" placeholder="SELECT * FROM hosts" rows="4"></textarea>
+                    <button id="execute-btn" class="execute-btn">Execute Query</button>
+                </div>
+            </div>
+
+            <div class="results-section" id="results-section" style="display: none;">
+                <div class="results-header">
+                    <div class="results-count" id="results-count"></div>
+                    <button id="export-btn" class="export-btn">Export CSV</button>
+                </div>
+                <div class="results-table-wrapper">
+                    <table class="results-table" id="results-table"></table>
+                </div>
+            </div>
+        </main>
+
+        <!-- Right Pane: Statistics -->
+        <aside class="right-pane">
+            <div id="stats-content" class="stats-content">
+                <div class="stats-placeholder">
+                    <p>Upload a scan file to see statistics</p>
+                </div>
+            </div>
+        </aside>
+    </div>
+
+    <footer class="footer">
+        <p>Created by <strong>syyntax</strong> | <a href="mailto:syyntax@protonmail.com">syyntax@protonmail.com</a></p>
+    </footer>
+
+    <script src="{{ url_for('static', filename='js/script.js') }}"></script>
+</body>
+</html>
