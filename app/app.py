@@ -256,5 +256,112 @@ def get_statistics(scan_id):
     return stats
 
 
+@app.route('/api/vulnerability/details', methods=['POST'])
+def get_vulnerability_details():
+    """Get detailed information about a vulnerability."""
+    try:
+        data = request.get_json()
+        plugin_name = data.get('plugin_name')
+
+        if not plugin_name:
+            return jsonify({'error': 'Missing plugin_name'}), 400
+
+        db.connect()
+
+        # Get vulnerability details (first occurrence for basic info)
+        db.cursor.execute('''
+            SELECT plugin_id, plugin_name, risk_factor, synopsis,
+                   description, solution, cve
+            FROM vulnerabilities
+            WHERE plugin_name = ?
+            LIMIT 1
+        ''', (plugin_name,))
+
+        vuln = db.cursor.fetchone()
+
+        if not vuln:
+            db.close()
+            return jsonify({'error': 'Vulnerability not found'}), 404
+
+        # Get affected hosts with port information
+        db.cursor.execute('''
+            SELECT DISTINCT h.hostname, h.ip_address,
+                   p.port_number, p.protocol, p.service_name
+            FROM vulnerabilities v
+            JOIN hosts h ON v.host_id = h.id
+            LEFT JOIN ports p ON v.port_id = p.id
+            WHERE v.plugin_name = ?
+            ORDER BY h.ip_address
+        ''', (plugin_name,))
+
+        affected_hosts = []
+        for row in db.cursor.fetchall():
+            affected_hosts.append({
+                'hostname': row[0],
+                'ip_address': row[1],
+                'port': row[2],
+                'protocol': row[3],
+                'service_name': row[4]
+            })
+
+        # Note: plugin_output is not stored in our current schema
+        # If you need it, you'd need to add a column to the vulnerabilities table
+
+        db.close()
+
+        return jsonify({
+            'plugin_id': vuln[0],
+            'plugin_name': vuln[1],
+            'risk_factor': vuln[2],
+            'synopsis': vuln[3],
+            'description': vuln[4],
+            'solution': vuln[5],
+            'cve': vuln[6],
+            'plugin_output': 'Plugin output not available',  # Placeholder
+            'affected_hosts': affected_hosts
+        }), 200
+
+    except Exception as e:
+        return jsonify({'error': f'Error fetching vulnerability: {str(e)}'}), 500
+
+
+@app.route('/api/vulnerability/update-severity', methods=['POST'])
+def update_vulnerability_severity():
+    """Update the severity/risk factor of a vulnerability."""
+    data = request.get_json()
+    plugin_id = data.get('plugin_id')
+    new_risk_factor = data.get('risk_factor')
+
+    if not plugin_id or not new_risk_factor:
+        return jsonify({'error': 'Missing plugin_id or risk_factor'}), 400
+
+    # Validate risk_factor
+    valid_severities = ['Critical', 'High', 'Medium', 'Low', 'Info', 'False Positive']
+    if new_risk_factor not in valid_severities:
+        return jsonify({'error': 'Invalid risk_factor'}), 400
+
+    try:
+        db.connect()
+
+        # Update all instances of this vulnerability
+        db.cursor.execute('''
+            UPDATE vulnerabilities
+            SET risk_factor = ?
+            WHERE plugin_id = ?
+        ''', (new_risk_factor, plugin_id))
+
+        affected_rows = db.cursor.rowcount
+        db.conn.commit()
+        db.close()
+
+        return jsonify({
+            'message': f'Updated {affected_rows} vulnerability record(s)',
+            'updated_count': affected_rows
+        }), 200
+
+    except Exception as e:
+        return jsonify({'error': f'Error updating vulnerability: {str(e)}'}), 500
+
+
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000, debug=True)

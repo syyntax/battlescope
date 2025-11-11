@@ -486,3 +486,204 @@ h2, h3, h4, h5, h6 {
 @keyframes spin {
     to { transform: rotate(360deg); }
 }
+
+/* Modal Styles */
+.modal {
+    display: none;
+    position: fixed;
+    z-index: 1000;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    overflow: auto;
+    background-color: rgba(0, 0, 0, 0.7);
+    animation: fadeIn 0.3s;
+}
+
+.modal.active {
+    display: block;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+.modal-content {
+    background-color: var(--bg-secondary);
+    margin: 3% auto;
+    padding: 2rem;
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+    width: 90%;
+    max-width: 1200px;
+    max-height: 90vh;
+    overflow-y: auto;
+    box-shadow: 0 8px 30px var(--shadow);
+    animation: slideDown 0.3s;
+}
+
+@keyframes slideDown {
+    from {
+        transform: translateY(-50px);
+        opacity: 0;
+    }
+    to {
+        transform: translateY(0);
+        opacity: 1;
+    }
+}
+
+.modal-close {
+    color: var(--text-secondary);
+    float: right;
+    font-size: 2rem;
+    font-weight: bold;
+    cursor: pointer;
+    transition: color 0.3s;
+}
+
+.modal-close:hover {
+    color: var(--error-color);
+}
+
+.modal-content h1 {
+    color: var(--accent-primary);
+    margin-bottom: 1.5rem;
+    padding-right: 3rem;
+}
+
+.modal-section {
+    margin-bottom: 1.5rem;
+    padding: 1rem;
+    background: var(--bg-tertiary);
+    border-radius: 8px;
+}
+
+.modal-section h3 {
+    color: var(--accent-secondary);
+    margin-bottom: 0.75rem;
+    font-size: 1.1rem;
+}
+
+.modal-field {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    margin-bottom: 1rem;
+}
+
+.modal-field:last-child {
+    margin-bottom: 0;
+}
+
+.modal-field label {
+    font-weight: 600;
+    color: var(--text-secondary);
+    min-width: 100px;
+}
+
+.modal-field span {
+    color: var(--text-primary);
+}
+
+.severity-dropdown {
+    padding: 0.5rem 1rem;
+    border: 2px solid var(--border-color);
+    border-radius: 6px;
+    background: var(--bg-primary);
+    color: var(--text-primary);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.9rem;
+    cursor: pointer;
+    transition: border-color 0.3s;
+}
+
+.severity-dropdown:focus {
+    outline: none;
+    border-color: var(--accent-secondary);
+}
+
+.save-severity-btn {
+    background: var(--success-color);
+    color: white;
+    border: none;
+    border-radius: 6px;
+    padding: 0.5rem 1.5rem;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.9rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: opacity 0.3s;
+}
+
+.save-severity-btn:hover {
+    opacity: 0.9;
+}
+
+.modal-text {
+    color: var(--text-primary);
+    line-height: 1.8;
+    white-space: pre-wrap;
+    word-wrap: break-word;
+}
+
+.modal-output {
+    background: var(--bg-primary);
+    padding: 1rem;
+    border-radius: 6px;
+    border: 1px solid var(--border-color);
+    color: var(--text-primary);
+    font-family: 'Fira Code', monospace;
+    font-size: 0.85rem;
+    overflow-x: auto;
+    white-space: pre-wrap;
+    word-wrap: break-word;
+}
+
+.modal-table-wrapper {
+    overflow-x: auto;
+    border-radius: 8px;
+    border: 1px solid var(--border-color);
+}
+
+.modal-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.9rem;
+}
+
+.modal-table th {
+    background: var(--accent-primary);
+    color: white;
+    padding: 0.75rem;
+    text-align: left;
+    font-weight: 600;
+}
+
+.modal-table td {
+    padding: 0.75rem;
+    border-bottom: 1px solid var(--border-color);
+    color: var(--text-primary);
+}
+
+.modal-table tr:hover {
+    background: var(--bg-primary);
+}
+
+.modal-table tr:last-child td {
+    border-bottom: none;
+}
+
+/* Clickable vulnerability names in results */
+.vuln-link {
+    color: var(--accent-secondary);
+    text-decoration: underline;
+    cursor: pointer;
+    transition: color 0.3s;
+}
+
+.vuln-link:hover {
+    color: var(--accent-primary);
+}

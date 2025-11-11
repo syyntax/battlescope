@@ -177,13 +177,29 @@ function displayResults(data) {
 
     // Create table body
     const tbody = document.createElement('tbody');
+    // Check if "Vulnerability" column exists
+    const vulnColIndex = data.columns.findIndex(col =>
+        col.toLowerCase() === 'vulnerability' || col.toLowerCase() === 'plugin_name'
+    );
+
     data.rows.forEach(row => {
         const tr = document.createElement('tr');
         // Convert Row object to array
         const rowArray = Array.isArray(row) ? row : Object.values(row);
-        rowArray.forEach(cell => {
+        rowArray.forEach((cell, index) => {
             const td = document.createElement('td');
-            td.textContent = cell !== null && cell !== undefined ? cell : '';
+            const cellValue = cell !== null && cell !== undefined ? cell : '';
+
+            // Make vulnerability names clickable
+            if (index === vulnColIndex && cellValue) {
+                const link = document.createElement('span');
+                link.className = 'vuln-link';
+                link.textContent = cellValue;
+                link.onclick = () => showVulnerabilityModal(cellValue);
+                td.appendChild(link);
+            } else {
+                td.textContent = cellValue;
+            }
             tr.appendChild(td);
         });
         tbody.appendChild(tr);
@@ -336,3 +352,126 @@ fetch('/api/statistics')
     .catch(() => {
         // No statistics available yet
     });
+
+// Modal functionality
+const modal = document.getElementById('vuln-modal');
+const modalClose = document.querySelector('.modal-close');
+let currentPluginId = null;
+
+// Close modal when clicking X
+modalClose.onclick = () => {
+    modal.classList.remove('active');
+};
+
+// Close modal when clicking outside
+window.onclick = (event) => {
+    if (event.target === modal) {
+        modal.classList.remove('active');
+    }
+};
+
+// Close modal on Escape key
+document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && modal.classList.contains('active')) {
+        modal.classList.remove('active');
+    }
+});
+
+// Show vulnerability modal
+function showVulnerabilityModal(pluginName) {
+    // Fetch vulnerability details from backend
+    fetch('/api/vulnerability/details', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ plugin_name: pluginName })
+    })
+        .then(response => response.json())
+        .then(data => {
+            if (data.error) {
+                alert(`Error: ${data.error}`);
+                return;
+            }
+
+            // Populate modal with data
+            document.getElementById('modal-vuln-title').textContent = data.plugin_name;
+            document.getElementById('modal-plugin-id').textContent = data.plugin_id;
+            document.getElementById('modal-severity').value = data.risk_factor;
+            document.getElementById('modal-synopsis').textContent = data.synopsis || 'N/A';
+            document.getElementById('modal-description').textContent = data.description || 'N/A';
+            document.getElementById('modal-solution').textContent = data.solution || 'N/A';
+            document.getElementById('modal-references').textContent = data.cve || 'N/A';
+            document.getElementById('modal-plugin-output').textContent = data.plugin_output || 'N/A';
+
+            // Store current plugin ID for saving
+            currentPluginId = data.plugin_id;
+
+            // Populate affected hosts table
+            const tbody = document.getElementById('modal-hosts-tbody');
+            tbody.innerHTML = '';
+
+            if (data.affected_hosts && data.affected_hosts.length > 0) {
+                data.affected_hosts.forEach(host => {
+                    const tr = document.createElement('tr');
+                    tr.innerHTML = `
+                        <td>${host.hostname || 'N/A'}</td>
+                        <td>${host.ip_address}</td>
+                        <td>${host.port || 'N/A'}</td>
+                        <td>${host.protocol || 'N/A'}</td>
+                        <td>${host.service_name || 'N/A'}</td>
+                    `;
+                    tbody.appendChild(tr);
+                });
+            } else {
+                tbody.innerHTML = '<tr><td colspan="5" style="text-align: center;">No affected hosts found</td></tr>';
+            }
+
+            // Show modal
+            modal.classList.add('active');
+        })
+        .catch(error => {
+            alert(`Error loading vulnerability details: ${error.message}`);
+        });
+}
+
+// Save severity changes
+document.getElementById('modal-save-severity').onclick = () => {
+    if (!currentPluginId) {
+        alert('No plugin ID available');
+        return;
+    }
+
+    const newSeverity = document.getElementById('modal-severity').value;
+
+    fetch('/api/vulnerability/update-severity', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+            plugin_id: currentPluginId,
+            risk_factor: newSeverity
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.error) {
+            alert(`Error: ${data.error}`);
+        } else {
+            alert('Severity updated successfully!');
+            // Refresh statistics
+            fetch('/api/statistics')
+                .then(response => response.json())
+                .then(stats => {
+                    if (stats) {
+                        displayStatistics(stats);
+                    }
+                })
+                .catch(() => {});
+        }
+    })
+    .catch(error => {
+        alert(`Error updating severity: ${error.message}`);
+    });
+};

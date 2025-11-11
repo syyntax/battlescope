@@ -127,6 +127,76 @@
         </aside>
     </div>
 
+    <!-- Vulnerability Details Modal -->
+    <div id="vuln-modal" class="modal">
+        <div class="modal-content">
+            <span class="modal-close">&times;</span>
+            <h1 id="modal-vuln-title">Vulnerability Title</h1>
+
+            <div class="modal-section">
+                <div class="modal-field">
+                    <label>Plugin ID:</label>
+                    <span id="modal-plugin-id"></span>
+                </div>
+                <div class="modal-field">
+                    <label>Severity:</label>
+                    <select id="modal-severity" class="severity-dropdown">
+                        <option value="Critical">Critical</option>
+                        <option value="High">High</option>
+                        <option value="Medium">Medium</option>
+                        <option value="Low">Low</option>
+                        <option value="Info">Info</option>
+                        <option value="False Positive">False Positive</option>
+                    </select>
+                    <button id="modal-save-severity" class="save-severity-btn">Save Changes</button>
+                </div>
+            </div>
+
+            <div class="modal-section">
+                <h3>Synopsis</h3>
+                <p id="modal-synopsis" class="modal-text"></p>
+            </div>
+
+            <div class="modal-section">
+                <h3>Description</h3>
+                <p id="modal-description" class="modal-text"></p>
+            </div>
+
+            <div class="modal-section">
+                <h3>Solution</h3>
+                <p id="modal-solution" class="modal-text"></p>
+            </div>
+
+            <div class="modal-section">
+                <h3>References</h3>
+                <p id="modal-references" class="modal-text"></p>
+            </div>
+
+            <div class="modal-section">
+                <h3>Plugin Output</h3>
+                <pre id="modal-plugin-output" class="modal-output"></pre>
+            </div>
+
+            <div class="modal-section">
+                <h3>Affected Hosts</h3>
+                <div class="modal-table-wrapper">
+                    <table class="modal-table" id="modal-hosts-table">
+                        <thead>
+                            <tr>
+                                <th>Hostname</th>
+                                <th>IP Address</th>
+                                <th>Port</th>
+                                <th>Protocol</th>
+                                <th>Service</th>
+                            </tr>
+                        </thead>
+                        <tbody id="modal-hosts-tbody"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <footer class="footer">
         <p>Created by <strong>syyntax</strong> | <a href="mailto:syyntax@protonmail.com">syyntax@protonmail.com</a></p>
     </footer>
