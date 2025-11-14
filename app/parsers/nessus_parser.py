@@ -115,14 +115,17 @@ class NessusParser:
             except ValueError:
                 pass
 
+        # Get plugin output
+        plugin_output = self._get_element_text(item, 'plugin_output')
+
         # Insert vulnerability
         self.cursor.execute('''
             INSERT INTO vulnerabilities (
                 host_id, port_id, plugin_id, plugin_name, severity, risk_factor,
-                description, solution, synopsis, cve, cvss_score
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                description, solution, synopsis, cve, cvss_score, plugin_output
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         ''', (host_id, port_id, plugin_id, plugin_name, severity, risk_factor,
-              description, solution, synopsis, cve, cvss_score))
+              description, solution, synopsis, cve, cvss_score, plugin_output))
 
     def _get_element_text(self, parent: ET.Element, tag: str) -> str:
         """Get text from an XML element."""

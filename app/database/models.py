@@ -94,12 +94,31 @@ class Database:
                 synopsis TEXT,
                 cve TEXT,
                 cvss_score REAL,
+                plugin_output TEXT,
                 FOREIGN KEY (host_id) REFERENCES hosts(id),
                 FOREIGN KEY (port_id) REFERENCES ports(id)
             )
         ''')
 
         self.conn.commit()
+        self.close()
+
+        # Run migrations
+        self.migrate_schema()
+
+    def migrate_schema(self):
+        """Apply database schema migrations."""
+        self.connect()
+
+        # Check if plugin_output column exists in vulnerabilities table
+        self.cursor.execute("PRAGMA table_info(vulnerabilities)")
+        columns = [row[1] for row in self.cursor.fetchall()]
+
+        if 'plugin_output' not in columns:
+            # Add plugin_output column if it doesn't exist
+            self.cursor.execute('ALTER TABLE vulnerabilities ADD COLUMN plugin_output TEXT')
+            self.conn.commit()
+
         self.close()
 
     def clear_db(self):

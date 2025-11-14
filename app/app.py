@@ -271,7 +271,7 @@ def get_vulnerability_details():
         # Get vulnerability details (first occurrence for basic info)
         db.cursor.execute('''
             SELECT plugin_id, plugin_name, risk_factor, synopsis,
-                   description, solution, cve
+                   description, solution, cve, plugin_output
             FROM vulnerabilities
             WHERE plugin_name = ?
             LIMIT 1
@@ -304,9 +304,6 @@ def get_vulnerability_details():
                 'service_name': row[4]
             })
 
-        # Note: plugin_output is not stored in our current schema
-        # If you need it, you'd need to add a column to the vulnerabilities table
-
         db.close()
 
         return jsonify({
@@ -317,7 +314,7 @@ def get_vulnerability_details():
             'description': vuln[4],
             'solution': vuln[5],
             'cve': vuln[6],
-            'plugin_output': 'Plugin output not available',  # Placeholder
+            'plugin_output': vuln[7] or 'No plugin output available',
             'affected_hosts': affected_hosts
         }), 200
 
