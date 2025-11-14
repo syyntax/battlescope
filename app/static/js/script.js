@@ -475,3 +475,561 @@ document.getElementById('modal-save-severity').onclick = () => {
         alert(`Error updating severity: ${error.message}`);
     });
 };
+
+// Report Generation
+document.getElementById('generate-report').addEventListener('click', () => {
+    generateReport();
+});
+
+function generateReport() {
+    // Show loading indicator
+    const reportBtn = document.getElementById('generate-report');
+    const originalText = reportBtn.textContent;
+    reportBtn.textContent = 'Generating...';
+    reportBtn.disabled = true;
+
+    fetch('/api/report/generate')
+        .then(response => response.json())
+        .then(data => {
+            if (data.error) {
+                alert(`Error: ${data.error}`);
+                reportBtn.textContent = originalText;
+                reportBtn.disabled = false;
+                return;
+            }
+
+            // Generate HTML report
+            const html = generateReportHTML(data);
+
+            // Download as HTML file
+            const blob = new Blob([html], { type: 'text/html' });
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `BattleScope_Report_${new Date().toISOString().split('T')[0]}.html`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            window.URL.revokeObjectURL(url);
+
+            reportBtn.textContent = originalText;
+            reportBtn.disabled = false;
+        })
+        .catch(error => {
+            alert(`Error generating report: ${error.message}`);
+            reportBtn.textContent = originalText;
+            reportBtn.disabled = false;
+        });
+}
+
+function generateReportHTML(data) {
+    const currentDate = new Date().toLocaleString();
+
+    return `<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BattleScope Vulnerability Report</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Arial', sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background-color: #f5f5f5;
+            padding: 2rem;
+        }
+
+        .report-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            padding: 3rem;
+            box-shadow: 0 0 20px rgba(0,0,0,0.1);
+        }
+
+        .report-header {
+            text-align: center;
+            border-bottom: 4px solid #6f42c1;
+            padding-bottom: 2rem;
+            margin-bottom: 2rem;
+        }
+
+        .report-header h1 {
+            font-size: 2.5rem;
+            color: #6f42c1;
+            margin-bottom: 0.5rem;
+        }
+
+        .report-meta {
+            color: #666;
+            font-size: 0.9rem;
+        }
+
+        .section {
+            margin-bottom: 3rem;
+        }
+
+        .section h2 {
+            color: #6f42c1;
+            font-size: 1.8rem;
+            margin-bottom: 1rem;
+            border-bottom: 2px solid #e9ecef;
+            padding-bottom: 0.5rem;
+        }
+
+        .section h3 {
+            color: #4c6ef5;
+            font-size: 1.3rem;
+            margin-top: 1.5rem;
+            margin-bottom: 0.75rem;
+        }
+
+        .info-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .info-card {
+            background: #f8f9fa;
+            padding: 1.5rem;
+            border-radius: 8px;
+            border-left: 4px solid #6f42c1;
+        }
+
+        .info-card label {
+            display: block;
+            font-weight: bold;
+            color: #666;
+            font-size: 0.85rem;
+            margin-bottom: 0.5rem;
+            text-transform: uppercase;
+        }
+
+        .info-card value {
+            display: block;
+            font-size: 1.5rem;
+            color: #333;
+            font-weight: bold;
+        }
+
+        .severity-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .severity-card {
+            padding: 1.5rem;
+            border-radius: 8px;
+            text-align: center;
+            color: white;
+        }
+
+        .severity-card.critical {
+            background: #dc3545;
+        }
+
+        .severity-card.high {
+            background: #fd7e14;
+        }
+
+        .severity-card.medium {
+            background: #ffc107;
+            color: #333;
+        }
+
+        .severity-card.low {
+            background: #20c997;
+        }
+
+        .severity-card.info {
+            background: #17a2b8;
+        }
+
+        .severity-card label {
+            display: block;
+            font-size: 0.85rem;
+            margin-bottom: 0.5rem;
+            opacity: 0.9;
+        }
+
+        .severity-card value {
+            display: block;
+            font-size: 2rem;
+            font-weight: bold;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 1rem;
+            font-size: 0.9rem;
+        }
+
+        table thead {
+            background: #6f42c1;
+            color: white;
+        }
+
+        table th {
+            padding: 0.75rem;
+            text-align: left;
+            font-weight: 600;
+        }
+
+        table td {
+            padding: 0.75rem;
+            border-bottom: 1px solid #e9ecef;
+        }
+
+        table tbody tr:hover {
+            background: #f8f9fa;
+        }
+
+        .badge {
+            display: inline-block;
+            padding: 0.25rem 0.75rem;
+            border-radius: 4px;
+            font-size: 0.85rem;
+            font-weight: bold;
+        }
+
+        .badge.critical {
+            background: #dc3545;
+            color: white;
+        }
+
+        .badge.high {
+            background: #fd7e14;
+            color: white;
+        }
+
+        .badge.medium {
+            background: #ffc107;
+            color: #333;
+        }
+
+        .badge.low {
+            background: #20c997;
+            color: white;
+        }
+
+        .badge.info {
+            background: #17a2b8;
+            color: white;
+        }
+
+        .executive-summary {
+            background: #e7f3ff;
+            padding: 2rem;
+            border-radius: 8px;
+            border-left: 4px solid #4c6ef5;
+            margin-bottom: 2rem;
+        }
+
+        .footer {
+            text-align: center;
+            padding-top: 2rem;
+            margin-top: 3rem;
+            border-top: 2px solid #e9ecef;
+            color: #666;
+            font-size: 0.9rem;
+        }
+
+        @media print {
+            body {
+                padding: 0;
+                background: white;
+            }
+
+            .report-container {
+                box-shadow: none;
+                padding: 1rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="report-container">
+        <div class="report-header">
+            <h1>BattleScope Vulnerability Report</h1>
+            <div class="report-meta">
+                <p><strong>Scan File:</strong> ${data.scan_info.filename}</p>
+                <p><strong>Scan Type:</strong> ${data.scan_info.scan_type.toUpperCase()}</p>
+                <p><strong>Report Generated:</strong> ${currentDate}</p>
+            </div>
+        </div>
+
+        ${generateExecutiveSummary(data)}
+        ${generateHostStatistics(data)}
+        ${generateVulnerabilityStatistics(data)}
+        ${generateCriticalFindings(data)}
+        ${generateTopVulnerableHosts(data)}
+        ${generateOpenPortsSummary(data)}
+        ${generateDetailedVulnerabilityList(data)}
+
+        <div class="footer">
+            <p><strong>BattleScope</strong> - Vulnerability Scanning and Reporting Tool</p>
+            <p>Created by <strong>syyntax</strong> | syyntax@protonmail.com</p>
+        </div>
+    </div>
+</body>
+</html>`;
+}
+
+function generateExecutiveSummary(data) {
+    const stats = data.vulnerability_stats;
+    const criticalCount = stats.Critical || 0;
+    const highCount = stats.High || 0;
+    const totalHosts = data.host_stats.total_hosts;
+
+    return `
+        <div class="section">
+            <h2>Executive Summary</h2>
+            <div class="executive-summary">
+                <p>This report provides a comprehensive analysis of the security posture based on the scan of <strong>${totalHosts} host(s)</strong>.
+                The assessment identified <strong>${stats.unique_vulnerabilities || 0} unique vulnerabilities</strong> across the scanned systems.</p>
+                <p style="margin-top: 1rem;"><strong>Critical Findings:</strong> ${criticalCount} Critical and ${highCount} High severity vulnerabilities require immediate attention.
+                These vulnerabilities pose significant security risks and should be prioritized for remediation.</p>
+            </div>
+        </div>
+    `;
+}
+
+function generateHostStatistics(data) {
+    return `
+        <div class="section">
+            <h2>Host Statistics</h2>
+            <div class="info-grid">
+                <div class="info-card">
+                    <label>Total Hosts</label>
+                    <value>${data.host_stats.total_hosts}</value>
+                </div>
+                <div class="info-card">
+                    <label>Alive Hosts</label>
+                    <value>${data.host_stats.alive_hosts}</value>
+                </div>
+                <div class="info-card">
+                    <label>Open Ports</label>
+                    <value>${data.open_ports.length > 0 ? data.open_ports.reduce((sum, p) => sum + p.count, 0) : 0}</value>
+                </div>
+                <div class="info-card">
+                    <label>Unique Vulnerabilities</label>
+                    <value>${data.vulnerability_stats.unique_vulnerabilities || 0}</value>
+                </div>
+            </div>
+        </div>
+    `;
+}
+
+function generateVulnerabilityStatistics(data) {
+    const stats = data.vulnerability_stats;
+
+    return `
+        <div class="section">
+            <h2>Vulnerability Statistics</h2>
+            <div class="severity-grid">
+                <div class="severity-card critical">
+                    <label>Critical</label>
+                    <value>${stats.Critical || 0}</value>
+                </div>
+                <div class="severity-card high">
+                    <label>High</label>
+                    <value>${stats.High || 0}</value>
+                </div>
+                <div class="severity-card medium">
+                    <label>Medium</label>
+                    <value>${stats.Medium || 0}</value>
+                </div>
+                <div class="severity-card low">
+                    <label>Low</label>
+                    <value>${stats.Low || 0}</value>
+                </div>
+                <div class="severity-card info">
+                    <label>Info</label>
+                    <value>${stats.Info || 0}</value>
+                </div>
+            </div>
+        </div>
+    `;
+}
+
+function generateCriticalFindings(data) {
+    if (!data.critical_findings || data.critical_findings.length === 0) {
+        return `
+            <div class="section">
+                <h2>Critical Findings</h2>
+                <p>No critical or high severity vulnerabilities found.</p>
+            </div>
+        `;
+    }
+
+    let rows = '';
+    data.critical_findings.forEach(vuln => {
+        rows += `
+            <tr>
+                <td><span class="badge ${vuln.severity.toLowerCase()}">${vuln.severity}</span></td>
+                <td><strong>${escapeHtml(vuln.name)}</strong></td>
+                <td>${vuln.affected_hosts}</td>
+                <td>${vuln.cvss_score}</td>
+                <td>${escapeHtml(vuln.synopsis || 'N/A')}</td>
+            </tr>
+        `;
+    });
+
+    return `
+        <div class="section">
+            <h2>Critical Findings (Top 10)</h2>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Severity</th>
+                        <th>Vulnerability</th>
+                        <th>Affected Hosts</th>
+                        <th>CVSS Score</th>
+                        <th>Synopsis</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    ${rows}
+                </tbody>
+            </table>
+        </div>
+    `;
+}
+
+function generateTopVulnerableHosts(data) {
+    if (!data.top_vulnerable_hosts || data.top_vulnerable_hosts.length === 0) {
+        return '';
+    }
+
+    let rows = '';
+    data.top_vulnerable_hosts.forEach(host => {
+        rows += `
+            <tr>
+                <td>${host.ip_address}</td>
+                <td>${host.hostname}</td>
+                <td style="color: #dc3545; font-weight: bold;">${host.critical}</td>
+                <td style="color: #fd7e14; font-weight: bold;">${host.high}</td>
+                <td style="color: #ffc107; font-weight: bold;">${host.medium}</td>
+                <td style="color: #20c997; font-weight: bold;">${host.low}</td>
+                <td><strong>${host.total}</strong></td>
+            </tr>
+        `;
+    });
+
+    return `
+        <div class="section">
+            <h2>Top 10 Vulnerable Hosts</h2>
+            <table>
+                <thead>
+                    <tr>
+                        <th>IP Address</th>
+                        <th>Hostname</th>
+                        <th>Critical</th>
+                        <th>High</th>
+                        <th>Medium</th>
+                        <th>Low</th>
+                        <th>Total</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    ${rows}
+                </tbody>
+            </table>
+        </div>
+    `;
+}
+
+function generateOpenPortsSummary(data) {
+    if (!data.open_ports || data.open_ports.length === 0) {
+        return '';
+    }
+
+    let rows = '';
+    data.open_ports.forEach(port => {
+        rows += `
+            <tr>
+                <td><strong>${port.port}</strong></td>
+                <td>${port.protocol.toUpperCase()}</td>
+                <td>${port.service}</td>
+                <td>${port.count}</td>
+            </tr>
+        `;
+    });
+
+    return `
+        <div class="section">
+            <h2>Open Ports Summary (Top 20)</h2>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Port</th>
+                        <th>Protocol</th>
+                        <th>Service</th>
+                        <th>Host Count</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    ${rows}
+                </tbody>
+            </table>
+        </div>
+    `;
+}
+
+function generateDetailedVulnerabilityList(data) {
+    if (!data.all_vulnerabilities || data.all_vulnerabilities.length === 0) {
+        return '';
+    }
+
+    let rows = '';
+    data.all_vulnerabilities.forEach(vuln => {
+        rows += `
+            <tr>
+                <td><span class="badge ${vuln.severity.toLowerCase()}">${vuln.severity}</span></td>
+                <td><strong>${escapeHtml(vuln.name)}</strong><br><small>Plugin ID: ${vuln.plugin_id}</small></td>
+                <td>${vuln.affected_hosts}</td>
+                <td>${escapeHtml(vuln.synopsis || 'N/A')}</td>
+                <td>${escapeHtml(vuln.cve || 'N/A')}</td>
+            </tr>
+        `;
+    });
+
+    return `
+        <div class="section">
+            <h2>Detailed Vulnerability List</h2>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Severity</th>
+                        <th>Vulnerability</th>
+                        <th>Affected Hosts</th>
+                        <th>Synopsis</th>
+                        <th>CVE</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    ${rows}
+                </tbody>
+            </table>
+        </div>
+    `;
+}
+
+function escapeHtml(text) {
+    if (!text) return '';
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+}

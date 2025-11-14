@@ -39,6 +39,7 @@ uploads/*
 .vscode/
 .idea/
 *.swp
+
 *.swo
 *~
 

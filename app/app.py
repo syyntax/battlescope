@@ -363,5 +363,182 @@ def update_vulnerability_severity():
         return jsonify({'error': f'Error updating vulnerability: {str(e)}'}), 500
 
 
+@app.route('/api/report/generate', methods=['GET'])
+def generate_report():
+    """Generate comprehensive vulnerability report data."""
+    try:
+        db.connect()
+
+        # Check if we have scan data
+        db.cursor.execute('SELECT id, filename, scan_type, upload_date FROM scans ORDER BY id DESC LIMIT 1')
+        scan_info = db.cursor.fetchone()
+
+        if not scan_info:
+            db.close()
+            return jsonify({'error': 'No scan data available'}), 404
+
+        scan_id = scan_info[0]
+        report_data = {
+            'scan_info': {
+                'filename': scan_info[1],
+                'scan_type': scan_info[2],
+                'scan_date': scan_info[3]
+            }
+        }
+
+        # Host statistics
+        db.cursor.execute('SELECT COUNT(DISTINCT ip_address) FROM hosts WHERE scan_id = ?', (scan_id,))
+        total_hosts = db.cursor.fetchone()[0]
+
+        db.cursor.execute('SELECT COUNT(DISTINCT ip_address) FROM hosts WHERE scan_id = ? AND status = "up"', (scan_id,))
+        alive_hosts = db.cursor.fetchone()[0]
+
+        report_data['host_stats'] = {
+            'total_hosts': total_hosts,
+            'alive_hosts': alive_hosts
+        }
+
+        # Vulnerability statistics by severity
+        db.cursor.execute('''
+            SELECT risk_factor, COUNT(*) as count
+            FROM vulnerabilities v
+            JOIN hosts h ON v.host_id = h.id
+            WHERE h.scan_id = ?
+            GROUP BY risk_factor
+            ORDER BY
+                CASE risk_factor
+                    WHEN 'Critical' THEN 1
+                    WHEN 'High' THEN 2
+                    WHEN 'Medium' THEN 3
+                    WHEN 'Low' THEN 4
+                    WHEN 'Info' THEN 5
+                    ELSE 6
+                END
+        ''', (scan_id,))
+        vuln_by_severity = {row[0]: row[1] for row in db.cursor.fetchall()}
+        report_data['vulnerability_stats'] = vuln_by_severity
+
+        # Total unique vulnerabilities
+        db.cursor.execute('''
+            SELECT COUNT(DISTINCT plugin_id)
+            FROM vulnerabilities v
+            JOIN hosts h ON v.host_id = h.id
+            WHERE h.scan_id = ?
+        ''', (scan_id,))
+        total_unique_vulns = db.cursor.fetchone()[0]
+        report_data['vulnerability_stats']['unique_vulnerabilities'] = total_unique_vulns
+
+        # Critical and High Findings (Top 10)
+        db.cursor.execute('''
+            SELECT v.plugin_name, v.risk_factor, COUNT(*) as affected_hosts,
+                   v.synopsis, v.cvss_score
+            FROM vulnerabilities v
+            JOIN hosts h ON v.host_id = h.id
+            WHERE h.scan_id = ? AND v.risk_factor IN ('Critical', 'High')
+            GROUP BY v.plugin_name
+            ORDER BY
+                CASE v.risk_factor WHEN 'Critical' THEN 1 WHEN 'High' THEN 2 END,
+                affected_hosts DESC
+            LIMIT 10
+        ''', (scan_id,))
+        critical_findings = []
+        for row in db.cursor.fetchall():
+            critical_findings.append({
+                'name': row[0],
+                'severity': row[1],
+                'affected_hosts': row[2],
+                'synopsis': row[3],
+                'cvss_score': row[4] or 'N/A'
+            })
+        report_data['critical_findings'] = critical_findings
+
+        # Top 10 Vulnerable Hosts
+        db.cursor.execute('''
+            SELECT h.ip_address, h.hostname,
+                   COUNT(CASE WHEN v.risk_factor = 'Critical' THEN 1 END) as critical,
+                   COUNT(CASE WHEN v.risk_factor = 'High' THEN 1 END) as high,
+                   COUNT(CASE WHEN v.risk_factor = 'Medium' THEN 1 END) as medium,
+                   COUNT(CASE WHEN v.risk_factor = 'Low' THEN 1 END) as low,
+                   COUNT(*) as total
+            FROM hosts h
+            LEFT JOIN vulnerabilities v ON h.id = v.host_id
+            WHERE h.scan_id = ?
+            GROUP BY h.ip_address, h.hostname
+            ORDER BY critical DESC, high DESC, medium DESC
+            LIMIT 10
+        ''', (scan_id,))
+        top_hosts = []
+        for row in db.cursor.fetchall():
+            top_hosts.append({
+                'ip_address': row[0],
+                'hostname': row[1] or 'N/A',
+                'critical': row[2],
+                'high': row[3],
+                'medium': row[4],
+                'low': row[5],
+                'total': row[6]
+            })
+        report_data['top_vulnerable_hosts'] = top_hosts
+
+        # Open Ports Summary (Top 20)
+        db.cursor.execute('''
+            SELECT p.port_number, p.protocol, p.service_name, COUNT(DISTINCT h.id) as count
+            FROM ports p
+            JOIN hosts h ON p.host_id = h.id
+            WHERE h.scan_id = ? AND p.state = 'open'
+            GROUP BY p.port_number, p.protocol, p.service_name
+            ORDER BY count DESC
+            LIMIT 20
+        ''', (scan_id,))
+        open_ports = []
+        for row in db.cursor.fetchall():
+            open_ports.append({
+                'port': row[0],
+                'protocol': row[1],
+                'service': row[2] or 'unknown',
+                'count': row[3]
+            })
+        report_data['open_ports'] = open_ports
+
+        # All Vulnerabilities Summary (grouped by plugin)
+        db.cursor.execute('''
+            SELECT v.plugin_id, v.plugin_name, v.risk_factor,
+                   COUNT(DISTINCT h.id) as affected_hosts,
+                   v.synopsis, v.solution, v.cve
+            FROM vulnerabilities v
+            JOIN hosts h ON v.host_id = h.id
+            WHERE h.scan_id = ?
+            GROUP BY v.plugin_id
+            ORDER BY
+                CASE v.risk_factor
+                    WHEN 'Critical' THEN 1
+                    WHEN 'High' THEN 2
+                    WHEN 'Medium' THEN 3
+                    WHEN 'Low' THEN 4
+                    WHEN 'Info' THEN 5
+                    ELSE 6
+                END,
+                affected_hosts DESC
+        ''', (scan_id,))
+        all_vulnerabilities = []
+        for row in db.cursor.fetchall():
+            all_vulnerabilities.append({
+                'plugin_id': row[0],
+                'name': row[1],
+                'severity': row[2],
+                'affected_hosts': row[3],
+                'synopsis': row[4],
+                'solution': row[5],
+                'cve': row[6]
+            })
+        report_data['all_vulnerabilities'] = all_vulnerabilities
+
+        db.close()
+        return jsonify(report_data), 200
+
+    except Exception as e:
+        return jsonify({'error': f'Error generating report: {str(e)}'}), 500
+
+
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000, debug=True)
