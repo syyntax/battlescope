@@ -11,6 +11,8 @@ A modern web application for parsing and analyzing Nessus and Nmap scan files. B
 - 🗄️ **SQLite Database**: Efficient storage and querying of scan data
 - 🔍 **SQL Queries**: Pre-built queries and custom SQL query execution
 - 📊 **Statistics Dashboard**: Real-time scan statistics and insights
+- 📈 **Report Generation**: Generate comprehensive HTML vulnerability reports
+- ⚙️ **Settings Management**: Configure company name, analyst info, and report customization
 - 📤 **CSV Export**: Export query results to CSV format
 - 🌓 **Dark/Light Mode**: Toggle between themes (defaults to system preference)
 - 🎨 **Modern UI**: Sleek design with purple/blue color scheme
@@ -88,6 +90,32 @@ WHERE v.risk_factor = 'Critical'
 1. Execute a query to display results
 2. Click the "Export CSV" button
 3. Save the downloaded CSV file
+
+### Report Generation
+
+1. Click the "Report" button in the navigation bar
+2. A comprehensive HTML vulnerability report will be generated and downloaded
+3. The report includes:
+   - Executive summary
+   - Host statistics
+   - Vulnerability breakdown by severity
+   - Top 10 critical findings
+   - Top 10 vulnerable hosts
+   - Open ports summary
+   - Detailed vulnerability list
+
+### Settings Configuration
+
+1. Click the "Settings" button in the navigation bar
+2. Configure the following options:
+   - **Company Name** (required): Appears in report title as "{Company} Vulnerability Report"
+   - **Analyst Name** (optional): Name of the primary analyst conducting the assessment
+   - **Report Author** (optional): Name of the person authoring the report
+   - **Organization/Department** (optional): Organization or department name
+   - **Contact Email** (optional): Contact email for report inquiries
+   - **Additional Notes** (optional): Any additional information to include in reports
+3. Click "Save Settings" to persist your configuration
+4. Settings are stored in `data/settings.json` and used for all future report generations
 
 ## Database Schema
 
@@ -185,8 +213,11 @@ BattleScope/
 │   │   └── js/
 │   │       └── script.js      # Frontend JavaScript
 │   └── templates/
-│       └── index.html         # Main HTML template
-├── data/                      # SQLite database storage
+│       ├── index.html         # Main HTML template
+│       └── settings.html      # Settings page template
+├── data/                      # SQLite database and settings storage
+│   ├── settings.json          # User settings (gitignored)
+│   └── settings.json.example  # Example settings template
 ├── uploads/                   # Temporary file upload storage
 ├── Dockerfile
 ├── docker-compose.yml
@@ -198,10 +229,16 @@ BattleScope/
 ## API Endpoints
 
 - `GET /` - Main application page
+- `GET /settings` - Settings configuration page
 - `POST /api/upload` - Upload and parse scan file
 - `POST /api/query` - Execute SQL query
 - `POST /api/export-csv` - Export query results to CSV
 - `GET /api/statistics` - Get scan statistics
+- `GET /api/report/generate` - Generate vulnerability report data
+- `GET /api/settings/load` - Load user settings
+- `POST /api/settings/save` - Save user settings
+- `POST /api/vulnerability/details` - Get detailed vulnerability information
+- `POST /api/vulnerability/update-severity` - Update vulnerability severity
 
 ## Security Features
 

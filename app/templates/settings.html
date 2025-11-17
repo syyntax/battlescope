@@ -1,0 +1,427 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BattleScope - Settings</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@300..700&family=Genos:ital,wght@0,100..900;1,100..900&family=Google+Sans+Code:ital,wght@0,300..800;1,300..800&family=Iceberg&family=JetBrains+Mono:ital,wght@0,100..800;1,100..800&family=PT+Sans:ital,wght@0,400;0,700;1,400;1,700&family=Sanchez:ital@0;1&display=swap" rel="stylesheet">
+    <style>
+        .settings-container {
+            max-width: 900px;
+            margin: 2rem auto;
+            padding: 0 2rem;
+        }
+
+        .settings-card {
+            background: var(--bg-secondary);
+            border-radius: 12px;
+            padding: 2rem;
+            box-shadow: 0 4px 15px var(--shadow);
+        }
+
+        .settings-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 2rem;
+            padding-bottom: 1rem;
+            border-bottom: 2px solid var(--accent-primary);
+        }
+
+        .settings-header h1 {
+            color: var(--accent-primary);
+            margin: 0;
+        }
+
+        .back-btn {
+            background: var(--bg-tertiary);
+            border: 2px solid var(--accent-secondary);
+            border-radius: 8px;
+            padding: 0.5rem 1.5rem;
+            color: var(--text-primary);
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.95rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            text-decoration: none;
+            display: inline-block;
+        }
+
+        .back-btn:hover {
+            background: var(--accent-secondary);
+            color: white;
+            transform: translateY(-2px);
+        }
+
+        .form-section {
+            margin-bottom: 2rem;
+        }
+
+        .form-section h2 {
+            color: var(--accent-secondary);
+            font-size: 1.3rem;
+            margin-bottom: 1rem;
+        }
+
+        .form-section p {
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+            margin-bottom: 1.5rem;
+            line-height: 1.6;
+        }
+
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+
+        .form-group label {
+            display: block;
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-bottom: 0.5rem;
+            font-size: 0.95rem;
+        }
+
+        .form-group label .required {
+            color: var(--error-color);
+            margin-left: 0.25rem;
+        }
+
+        .form-group input,
+        .form-group textarea {
+            width: 100%;
+            padding: 0.75rem;
+            border: 2px solid var(--border-color);
+            border-radius: 8px;
+            background: var(--bg-tertiary);
+            color: var(--text-primary);
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.95rem;
+            transition: border-color 0.3s;
+        }
+
+        .form-group input:focus,
+        .form-group textarea:focus {
+            outline: none;
+            border-color: var(--accent-secondary);
+        }
+
+        .form-group textarea {
+            resize: vertical;
+            min-height: 100px;
+        }
+
+        .form-hint {
+            display: block;
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+            margin-top: 0.5rem;
+            font-style: italic;
+        }
+
+        .settings-actions {
+            display: flex;
+            gap: 1rem;
+            justify-content: flex-end;
+            padding-top: 1.5rem;
+            border-top: 1px solid var(--border-color);
+        }
+
+        .btn {
+            padding: 0.75rem 2rem;
+            border-radius: 8px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            border: none;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
+            color: white;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px var(--shadow);
+        }
+
+        .btn-secondary {
+            background: var(--bg-tertiary);
+            color: var(--text-primary);
+            border: 2px solid var(--border-color);
+        }
+
+        .btn-secondary:hover {
+            border-color: var(--accent-primary);
+            color: var(--accent-primary);
+        }
+
+        .status-message {
+            padding: 1rem;
+            border-radius: 8px;
+            margin-bottom: 1.5rem;
+            font-size: 0.95rem;
+            display: none;
+        }
+
+        .status-message.success {
+            background: var(--success-color);
+            color: white;
+        }
+
+        .status-message.error {
+            background: var(--error-color);
+            color: white;
+        }
+
+        .settings-info {
+            background: var(--bg-tertiary);
+            padding: 1.5rem;
+            border-radius: 8px;
+            border-left: 4px solid var(--accent-secondary);
+            margin-bottom: 2rem;
+        }
+
+        .settings-info h3 {
+            color: var(--accent-secondary);
+            margin-bottom: 0.5rem;
+            font-size: 1rem;
+        }
+
+        .settings-info p {
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+            margin: 0;
+        }
+    </style>
+</head>
+<body>
+    <nav class="navbar">
+        <div class="nav-content">
+            <h1 class="logo">BattleScope</h1>
+            <div class="nav-actions">
+                <button id="theme-toggle" class="theme-toggle" aria-label="Toggle theme">
+                    <span class="theme-icon">◐</span>
+                </button>
+            </div>
+        </div>
+    </nav>
+
+    <div class="settings-container">
+        <div class="settings-card">
+            <div class="settings-header">
+                <h1>Settings</h1>
+                <a href="/" class="back-btn">← Back to Dashboard</a>
+            </div>
+
+            <div id="status-message" class="status-message"></div>
+
+            <div class="settings-info">
+                <h3>About Settings</h3>
+                <p>Configure BattleScope report settings. These settings will be used when generating vulnerability reports. Changes are saved automatically to the data directory.</p>
+            </div>
+
+            <form id="settings-form">
+                <div class="form-section">
+                    <h2>Report Information</h2>
+                    <p>Configure the company and analyst information that will appear in generated reports.</p>
+
+                    <div class="form-group">
+                        <label for="company-name">
+                            Company Name
+                            <span class="required">*</span>
+                        </label>
+                        <input
+                            type="text"
+                            id="company-name"
+                            name="company_name"
+                            placeholder="BattleScope"
+                            required
+                        >
+                        <span class="form-hint">This will appear in the report title as "{Company} Vulnerability Report"</span>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="analyst-name">Analyst Name</label>
+                        <input
+                            type="text"
+                            id="analyst-name"
+                            name="analyst_name"
+                            placeholder="John Doe"
+                        >
+                        <span class="form-hint">Name of the primary analyst conducting the assessment (optional)</span>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="report-author">Report Author</label>
+                        <input
+                            type="text"
+                            id="report-author"
+                            name="report_author"
+                            placeholder="Jane Smith"
+                        >
+                        <span class="form-hint">Name of the person authoring the report (optional)</span>
+                    </div>
+                </div>
+
+                <div class="form-section">
+                    <h2>Additional Settings</h2>
+                    <p>Optional fields for additional report customization.</p>
+
+                    <div class="form-group">
+                        <label for="organization">Organization/Department</label>
+                        <input
+                            type="text"
+                            id="organization"
+                            name="organization"
+                            placeholder="Security Operations"
+                        >
+                        <span class="form-hint">Organization or department name (optional)</span>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="contact-email">Contact Email</label>
+                        <input
+                            type="email"
+                            id="contact-email"
+                            name="contact_email"
+                            placeholder="security@company.com"
+                        >
+                        <span class="form-hint">Contact email for report inquiries (optional)</span>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="notes">Additional Notes</label>
+                        <textarea
+                            id="notes"
+                            name="notes"
+                            placeholder="Enter any additional notes or context for reports..."
+                        ></textarea>
+                        <span class="form-hint">Any additional information to include in reports (optional)</span>
+                    </div>
+                </div>
+
+                <div class="settings-actions">
+                    <button type="button" class="btn btn-secondary" id="reset-btn">Reset to Defaults</button>
+                    <button type="submit" class="btn btn-primary">Save Settings</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <footer class="footer">
+        <p>Created by <strong>syyntax</strong> | <a href="mailto:syyntax@protonmail.com">syyntax@protonmail.com</a></p>
+    </footer>
+
+    <script>
+        // Theme handling
+        function initTheme() {
+            const savedTheme = localStorage.getItem('theme');
+            if (savedTheme) {
+                document.documentElement.setAttribute('data-theme', savedTheme);
+            } else {
+                const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+                document.documentElement.setAttribute('data-theme', prefersDark ? 'dark' : 'light');
+            }
+        }
+
+        document.getElementById('theme-toggle').addEventListener('click', () => {
+            const currentTheme = document.documentElement.getAttribute('data-theme');
+            const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+            document.documentElement.setAttribute('data-theme', newTheme);
+            localStorage.setItem('theme', newTheme);
+        });
+
+        initTheme();
+
+        // Load settings on page load
+        function loadSettings() {
+            fetch('/api/settings/load')
+                .then(response => response.json())
+                .then(data => {
+                    if (!data.error) {
+                        document.getElementById('company-name').value = data.company_name || 'BattleScope';
+                        document.getElementById('analyst-name').value = data.analyst_name || '';
+                        document.getElementById('report-author').value = data.report_author || '';
+                        document.getElementById('organization').value = data.organization || '';
+                        document.getElementById('contact-email').value = data.contact_email || '';
+                        document.getElementById('notes').value = data.notes || '';
+                    }
+                })
+                .catch(error => {
+                    console.error('Error loading settings:', error);
+                });
+        }
+
+        // Save settings
+        document.getElementById('settings-form').addEventListener('submit', (e) => {
+            e.preventDefault();
+
+            const formData = {
+                company_name: document.getElementById('company-name').value || 'BattleScope',
+                analyst_name: document.getElementById('analyst-name').value,
+                report_author: document.getElementById('report-author').value,
+                organization: document.getElementById('organization').value,
+                contact_email: document.getElementById('contact-email').value,
+                notes: document.getElementById('notes').value
+            };
+
+            fetch('/api/settings/save', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(formData)
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.error) {
+                    showStatus(data.error, 'error');
+                } else {
+                    showStatus('Settings saved successfully!', 'success');
+                }
+            })
+            .catch(error => {
+                showStatus('Error saving settings: ' + error.message, 'error');
+            });
+        });
+
+        // Reset to defaults
+        document.getElementById('reset-btn').addEventListener('click', () => {
+            if (confirm('Are you sure you want to reset all settings to defaults? This action cannot be undone.')) {
+                document.getElementById('company-name').value = 'BattleScope';
+                document.getElementById('analyst-name').value = '';
+                document.getElementById('report-author').value = '';
+                document.getElementById('organization').value = '';
+                document.getElementById('contact-email').value = '';
+                document.getElementById('notes').value = '';
+
+                // Trigger save with default values
+                document.getElementById('settings-form').dispatchEvent(new Event('submit'));
+            }
+        });
+
+        function showStatus(message, type) {
+            const statusEl = document.getElementById('status-message');
+            statusEl.textContent = message;
+            statusEl.className = `status-message ${type}`;
+            statusEl.style.display = 'block';
+
+            // Auto-hide after 5 seconds
+            setTimeout(() => {
+                statusEl.style.display = 'none';
+            }, 5000);
+        }
+
+        // Load settings on page load
+        loadSettings();
+    </script>
+</body>
+</html>

@@ -31,6 +31,9 @@ instance/
 data/*.db
 data/*.db-journal
 
+# Settings (user-specific configuration)
+data/settings.json
+
 # Uploads
 uploads/*
 !uploads/.gitkeep

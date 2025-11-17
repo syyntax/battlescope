@@ -506,7 +506,12 @@ function generateReport() {
             const url = window.URL.createObjectURL(blob);
             const a = document.createElement('a');
             a.href = url;
-            a.download = `BattleScope_Report_${new Date().toISOString().split('T')[0]}.html`;
+
+            // Use company name in filename
+            const companyName = data.settings?.company_name || 'BattleScope';
+            const sanitizedCompanyName = companyName.replace(/[^a-z0-9]/gi, '_');
+            a.download = `${sanitizedCompanyName}_Report_${new Date().toISOString().split('T')[0]}.html`;
+
             document.body.appendChild(a);
             a.click();
             document.body.removeChild(a);
@@ -524,13 +529,22 @@ function generateReport() {
 
 function generateReportHTML(data) {
     const currentDate = new Date().toLocaleString();
+    const settings = data.settings || {
+        company_name: 'BattleScope',
+        analyst_name: '',
+        report_author: '',
+        organization: '',
+        contact_email: '',
+        notes: ''
+    };
+    const companyName = settings.company_name || 'BattleScope';
 
     return `<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>BattleScope Vulnerability Report</title>
+    <title>${companyName} Vulnerability Report</title>
     <style>
         * {
             margin: 0;
@@ -762,11 +776,15 @@ function generateReportHTML(data) {
 <body>
     <div class="report-container">
         <div class="report-header">
-            <h1>BattleScope Vulnerability Report</h1>
+            <h1>${companyName} Vulnerability Report</h1>
             <div class="report-meta">
                 <p><strong>Scan File:</strong> ${data.scan_info.filename}</p>
                 <p><strong>Scan Type:</strong> ${data.scan_info.scan_type.toUpperCase()}</p>
                 <p><strong>Report Generated:</strong> ${currentDate}</p>
+                ${settings.analyst_name ? `<p><strong>Analyst:</strong> ${escapeHtml(settings.analyst_name)}</p>` : ''}
+                ${settings.report_author ? `<p><strong>Author:</strong> ${escapeHtml(settings.report_author)}</p>` : ''}
+                ${settings.organization ? `<p><strong>Organization:</strong> ${escapeHtml(settings.organization)}</p>` : ''}
+                ${settings.contact_email ? `<p><strong>Contact:</strong> ${escapeHtml(settings.contact_email)}</p>` : ''}
             </div>
         </div>
 
@@ -779,8 +797,10 @@ function generateReportHTML(data) {
         ${generateDetailedVulnerabilityList(data)}
 
         <div class="footer">
-            <p><strong>BattleScope</strong> - Vulnerability Scanning and Reporting Tool</p>
-            <p>Created by <strong>syyntax</strong> | syyntax@protonmail.com</p>
+            <p><strong>${companyName}</strong> - Vulnerability Assessment Report</p>
+            ${settings.analyst_name || settings.report_author ? `<p>Prepared by: ${escapeHtml(settings.analyst_name || settings.report_author)}</p>` : ''}
+            ${settings.notes ? `<p style="margin-top: 1rem; font-style: italic;">${escapeHtml(settings.notes)}</p>` : ''}
+            <p style="margin-top: 1rem; font-size: 0.85rem;">Report generated using <strong>BattleScope</strong> by syyntax</p>
         </div>
     </div>
 </body>

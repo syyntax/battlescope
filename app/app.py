@@ -4,6 +4,7 @@ from werkzeug.utils import secure_filename
 import os
 import csv
 import io
+import json
 import sqlite3
 from datetime import datetime
 
@@ -15,10 +16,21 @@ from parsers.nmap_parser import NmapParser
 app = Flask(__name__)
 app.config['MAX_CONTENT_LENGTH'] = 100 * 1024 * 1024  # 100MB max file size
 app.config['UPLOAD_FOLDER'] = 'uploads'
+app.config['SETTINGS_FILE'] = os.path.join('data', 'settings.json')
 
 # Initialize database
 db = Database()
 db.init_db()
+
+# Default settings
+DEFAULT_SETTINGS = {
+    'company_name': 'BattleScope',
+    'analyst_name': '',
+    'report_author': '',
+    'organization': '',
+    'contact_email': '',
+    'notes': ''
+}
 
 
 def allowed_file(filename):
@@ -360,6 +372,80 @@ def update_vulnerability_severity():
         return jsonify({'error': f'Error updating vulnerability: {str(e)}'}), 500
 
 
+def load_settings():
+    """Load settings from JSON file."""
+    try:
+        if os.path.exists(app.config['SETTINGS_FILE']):
+            with open(app.config['SETTINGS_FILE'], 'r') as f:
+                settings = json.load(f)
+                # Merge with defaults to ensure all keys exist
+                return {**DEFAULT_SETTINGS, **settings}
+        else:
+            return DEFAULT_SETTINGS.copy()
+    except Exception as e:
+        print(f"Error loading settings: {e}")
+        return DEFAULT_SETTINGS.copy()
+
+
+def save_settings(settings):
+    """Save settings to JSON file."""
+    try:
+        # Ensure data directory exists
+        os.makedirs('data', exist_ok=True)
+
+        with open(app.config['SETTINGS_FILE'], 'w') as f:
+            json.dump(settings, f, indent=4)
+        return True
+    except Exception as e:
+        print(f"Error saving settings: {e}")
+        return False
+
+
+@app.route('/settings')
+def settings_page():
+    """Render settings page."""
+    return render_template('settings.html')
+
+
+@app.route('/api/settings/load', methods=['GET'])
+def get_settings():
+    """Load settings from file."""
+    try:
+        settings = load_settings()
+        return jsonify(settings), 200
+    except Exception as e:
+        return jsonify({'error': f'Error loading settings: {str(e)}'}), 500
+
+
+@app.route('/api/settings/save', methods=['POST'])
+def save_settings_endpoint():
+    """Save settings to file."""
+    try:
+        data = request.get_json()
+
+        # Validate required fields
+        if not data.get('company_name'):
+            return jsonify({'error': 'Company name is required'}), 400
+
+        # Create settings object with defaults for missing fields
+        settings = {
+            'company_name': data.get('company_name', 'BattleScope'),
+            'analyst_name': data.get('analyst_name', ''),
+            'report_author': data.get('report_author', ''),
+            'organization': data.get('organization', ''),
+            'contact_email': data.get('contact_email', ''),
+            'notes': data.get('notes', '')
+        }
+
+        if save_settings(settings):
+            return jsonify({'message': 'Settings saved successfully', 'settings': settings}), 200
+        else:
+            return jsonify({'error': 'Failed to save settings'}), 500
+
+    except Exception as e:
+        return jsonify({'error': f'Error saving settings: {str(e)}'}), 500
+
+
 @app.route('/api/report/generate', methods=['GET'])
 def generate_report():
     """Generate comprehensive vulnerability report data."""
@@ -375,12 +461,17 @@ def generate_report():
             return jsonify({'error': 'No scan data available'}), 404
 
         scan_id = scan_info[0]
+
+        # Load settings for report
+        settings = load_settings()
+
         report_data = {
             'scan_info': {
                 'filename': scan_info[1],
                 'scan_type': scan_info[2],
                 'scan_date': scan_info[3]
-            }
+            },
+            'settings': settings
         }
 
         # Host statistics
